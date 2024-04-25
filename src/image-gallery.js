@@ -5,9 +5,15 @@ export class ImageGallery extends LitElement {
         return 'image-gallery';
     }
 
+
+  // Singleton instance
+  static _instance;
+
+  // Private constructor
   constructor() {
     super();
-    this.images = [
+    if (!ImageGallery._instance) {
+      this.images = [
         "https://images.ctfassets.net/7mmwp5vb96tc/1UmmmbBoLgvDszcSXjumQc/f8f1e32065c244489ce3050bcd85cec3/Norway_Vikingen_HGR_163147_Photo_Espen_Mills.jpg?q=75&w=3840&fm=webp",
         "https://static01.nyt.com/images/2017/10/22/travel/22Norway1/22Norway1-superJumbo.jpg",
         "https://www.travelandleisure.com/thmb/BWJQU1XbrF_rA9ffCANSLeDfhUY=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/TAL-northern-lights-SOLARMAX0124-a4a1d62e9991474183434a3d2a670217.jpg",
@@ -17,25 +23,36 @@ export class ImageGallery extends LitElement {
         "https://dxbhsrqyrr690.cloudfront.net/sidearm.nextgen.sites/gopsusports.com/images/2023/9/24/DSC_9146.jpg",
         "https://cdn.learfield.com/wp-content/uploads/2016/11/Penn-State2.jpg",
         "https://www.state.gov/wp-content/uploads/2019/04/Japan-2107x1406.jpg"
-    ];
+      ];
 
-    this.showSlideshow = false;
-    this.currentImageIndex = 0;
+      this.captions = [
+        "Norwegian Mountain Range",
+        "Norway Luxury Housing",
+        "Aurora Borealis",
+        "Space Wallpaper",
+        "Astronaut on the Moon",
+        "PSU Old Main",
+        "PSU Whiteout with Fireworks",
+        "PSU Whiteout game",
+        "Japanese Pagoda"
+      ];
+      
+      this.showSlideshow = false;
+      this.currentImageIndex = 0;
+
+      ImageGallery._instance = this;
+    }
+
+    return ImageGallery._instance;
   }
   
   static get styles() {
     return css`
-    :host {
-
-    }
-    
     .gallery-container {
         text-align: center;
     }
 
     .image-list {
-        //try make flex ratios better
-        //display: flex;
         display: inline;
         justify-content: space-between;
         flex-wrap: wrap;
@@ -72,21 +89,61 @@ export class ImageGallery extends LitElement {
         max-height: 80%;
         position: absolute;
         display: flex;
+        border: 2px solid gold;
+        border-radius: 10%;
+    }
+
+    #gallery-btn {
+        position: absolute;
+        background-color: #333333;
+        font-size: 24px;
+        cursor: pointer;
+        font-weight: bold;
     }
 
     .close-btn {
-        position: absolute;
         top: 20px;
         right: 20px;
         color: red;
-        font-size: 24px;
         cursor: pointer;
     }
+
+    .left-btn {
+        bottom: 20px;
+        left: 20px;
+        border-radius: 50%;
+        color: white;
+    }
+
+    .right-btn {
+        bottom: 20px;
+        right: 20px;
+        border-radius: 50%;
+        color: white;
+    }
+
+    #gallery-card-text {
+      font-size: 16px;
+      font-weight: bold;
+      position: absolute;
+      z-index: 1;
+    }
     
-    .close-btn:hover,
-    .close-btn:focus {
-        background-color: #ff9900;
+    .image-counter {
+        color: #00ff48;
+        top: 5px;
       }
+
+    .image-caption {
+      color: #ffffff;
+      bottom: 5px;
+    }
+  
+    #gallery-btn:hover,
+    #gallery-btn:focus {
+      background-color: #008cff;
+      border: 2px solid #00ff08;
+    }
     `;
   }
 
@@ -102,7 +159,11 @@ export class ImageGallery extends LitElement {
 
             ${this.showSlideshow ? html`
                 <div class="slideshow-container">
-                    <button class="close-btn" @click="${this.closeSlideshow}">&times;</button>
+                    <button id="gallery-btn" class="close-btn" @click="${this.closeSlideshow}">&times;</button>
+                    <button id="gallery-btn" class="left-btn" @click="${this.leftArrow}"><</button>
+                    <button id="gallery-btn" class="right-btn" @click="${this.rightArrow}">></button>
+                    <p id="gallery-card-text" class="image-counter">Image ${this.currentImageIndex+1} of ${this.images.length}</p>
+                    <p id="gallery-card-text" class="image-caption">${this.captions[this.currentImageIndex]}</p>
                     <img src="${this.images[this.currentImageIndex]}" alt="Gallery Image">
                 </div>
             `:''}
@@ -111,18 +172,63 @@ export class ImageGallery extends LitElement {
     }
 
     openSlideshow(index) {
-        this.currentImageIndex = index;
-        this.showSlideshow = true;
-        document.body.style.overflow = 'hidden';
-        this.requestUpdate();
-      }
-    
-      closeSlideshow() {
-        this.showSlideshow = false;
-        document.body.style.overflow = 'auto';
-        this.requestUpdate();
-      }
+      this.currentImageIndex = index;
+      this.showSlideshow = true;
 
+      // Prevents user scrolling
+      document.body.style.overflow = 'hidden';
+
+      // Add event listeners for keyboard navigation
+      document.addEventListener('keydown', this.handleKeyDown);
+      this.requestUpdate();
+    }
+  
+    closeSlideshow() {
+      this.showSlideshow = false;
+
+      // Enables user scrolling
+      document.body.style.overflow = 'auto';
+
+      // Remove event listeners when closing slideshow
+      document.removeEventListener('keydown', this.handleKeyDown);
+      this.requestUpdate();
+    }
+    
+    leftArrow() {
+      if (this.currentImageIndex == 0) {
+        this.currentImageIndex = this.images.length-1;
+      }
+      else {
+        this.currentImageIndex-=1;
+      }
+      this.requestUpdate();
+    }
+    
+    rightArrow() {
+      if (this.currentImageIndex == this.images.length-1) {
+        this.currentImageIndex = 0;
+      }
+      else {
+        this.currentImageIndex+=1;
+      }
+      this.requestUpdate();
+    }
+
+    handleKeyDown = (event) => {
+      switch (event.key) {
+        case 'ArrowLeft':
+          this.leftArrow();
+          break;
+        case 'ArrowRight':
+          this.rightArrow();
+          break;
+        case 'Escape':
+          this.closeSlideshow();
+          break;
+        default:
+          break;
+      }
+    };
 }
 
 globalThis.customElements.define(ImageGallery.tag, ImageGallery);
